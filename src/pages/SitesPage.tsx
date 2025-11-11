@@ -17,7 +17,8 @@ import {
   MoreVert as MoreVertIcon, 
   Edit as EditIcon, 
   Block as BlockIcon, 
-  Delete as DeleteIcon 
+  Delete as DeleteIcon,
+  Home as HomeIcon
 } from '@mui/icons-material';
 import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
 import PageTemplate from './PageTemplate';
@@ -149,9 +150,34 @@ const SitesPage: React.FC = () => {
     {
       id: 'name',
       label: 'Name',
-      minWidth: 200,
+      minWidth: 250,
       sortable: true,
       headerAlign: 'left',
+      format: (value: string, row: Site) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            backgroundColor: 'success.main',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            flexShrink: 0,
+          }}>
+            <HomeIcon fontSize="small" sx={{ color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="body2" fontWeight={500} color="text.primary">
+              {value}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {row.chargers} available • {row.status}
+            </Typography>
+          </Box>
+        </Box>
+      ),
     },
     {
       id: 'location',
