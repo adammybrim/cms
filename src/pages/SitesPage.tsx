@@ -18,7 +18,8 @@ import {
   Edit as EditIcon, 
   Block as BlockIcon, 
   Delete as DeleteIcon,
-  Home as HomeIcon
+  Home as HomeIcon,
+  FiberManualRecord as StatusDotIcon
 } from '@mui/icons-material';
 import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
 import PageTemplate from './PageTemplate';
@@ -172,9 +173,48 @@ const SitesPage: React.FC = () => {
             <Typography variant="body2" fontWeight={500} color="text.primary">
               {value}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {row.chargers} available • {row.status}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <StatusDotIcon 
+                fontSize="small" 
+                sx={{
+                  fontSize: '0.5rem',
+                  color: (theme) => {
+                    switch(row.status) {
+                      case 'Online':
+                        return theme.palette.success.main;
+                      case 'Offline':
+                        return theme.palette.error.main;
+                      case 'Maintenance':
+                        return theme.palette.warning.main;
+                      default:
+                        return 'text.secondary';
+                    }
+                  },
+                  marginRight: '4px'
+                }} 
+              />
+              <Typography 
+                variant="caption" 
+                sx={{
+                  color: (theme) => {
+                    switch(row.status) {
+                      case 'Online':
+                        return theme.palette.success.main;
+                      case 'Offline':
+                        return theme.palette.error.main;
+                      case 'Maintenance':
+                        return theme.palette.warning.main;
+                      default:
+                        return 'text.secondary';
+                    }
+                  },
+                  fontWeight: 500,
+                  textTransform: 'capitalize'
+                }}
+              >
+                {row.status}
+              </Typography>
+            </Box>
           </Box>
         </Box>
       ),
@@ -186,6 +226,14 @@ const SitesPage: React.FC = () => {
       sortable: true,
       align: 'center',
       headerAlign: 'center',
+      format: (value: string) => (
+        <Box sx={{ textAlign: 'center', lineHeight: 1.2 }}>
+          <div>{value}</div>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
+            {value.split(',')[0].match(/\d+/)?.[0] || 'AB12' } 3CD
+          </Typography>
+        </Box>
+      ),
     },
     {
       id: 'chargers',
