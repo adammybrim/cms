@@ -32,12 +32,13 @@ const NavButton: React.FC<NavButtonProps> = ({
       <ListItemButton
         onClick={handleClick}
         sx={{
-          minHeight: 48,
+          minHeight: 40,
+          height: 40,
           justifyContent: isCollapsed ? 'center' : 'flex-start',
-          px: 2.5,
-          py: 1.5,
-          mx: 1,
-          borderRadius: '8px',
+          px: 1.5,
+          py: 1,
+          mx: 0.5,
+          borderRadius: '6px',
           bgcolor: isActive ? 'rgba(41, 207, 38, 0.1)' : 'transparent',
           '&:hover': {
             backgroundColor: isActive ? 'rgba(41, 207, 38, 0.15)' : 'rgba(0, 0, 0, 0.04)',
@@ -47,14 +48,14 @@ const NavButton: React.FC<NavButtonProps> = ({
         <ListItemIcon
           sx={{
             minWidth: 0,
-            mr: isCollapsed ? 'auto' : 2,
+            mr: isCollapsed ? 'auto' : 1.5,
             justifyContent: 'center',
             color: isActive ? 'primary.main' : 'text.secondary',
           }}
         >
           {React.cloneElement(icon, {
             style: {
-              fontSize: '24px',
+              fontSize: '20px',
               opacity: isActive ? 1 : 0.8,
             },
           } as React.HTMLAttributes<SVGElement>)}
@@ -62,7 +63,8 @@ const NavButton: React.FC<NavButtonProps> = ({
         <ListItemText
           primary={text}
           primaryTypographyProps={{
-            fontWeight: isActive ? 600 : 500,
+            fontSize: '0.8rem',
+            fontWeight: isActive ? 600 : 400,
             color: isActive ? 'primary.main' : 'text.primary',
             display: isCollapsed ? 'none' : 'block',
             whiteSpace: 'nowrap',

@@ -29,7 +29,21 @@ const MainLayout: React.FC<{ children?: ReactNode }> = ({ children }) => {
       width: '100%',
       position: 'relative',
       overflow: 'hidden',
-      background: 'linear-gradient(-45deg, rgba(255,255,255,0.95) 0%, rgba(41, 207, 38, 0.03) 100%)',
+      backgroundColor: '#ffffff',
+      backgroundImage: [
+        // Brighter green spot (portal highlight color) - top left
+        'radial-gradient(circle at 20% 30%, rgba(41, 207, 38, 0.12) 0%, transparent 50%)',
+        // Yellow-green spot - bottom right
+        'radial-gradient(circle at 85% 85%, rgba(220, 255, 120, 0.18) 0%, transparent 50%)',
+        // Softer yellow-green spot - middle right
+        'radial-gradient(circle at 80% 70%, rgba(220, 255, 180, 0.15) 0%, transparent 60%)',
+        // White highlights for depth
+        'radial-gradient(circle at 30% 70%, rgba(255, 255, 255, 0.8) 0%, transparent 40%)',
+        'radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.7) 0%, transparent 40%)'
+      ].join(','),
+      backgroundSize: '100% 100%',
+      backgroundPosition: '0 0, 0 0, 0 0, 0 0',
+      backgroundRepeat: 'no-repeat',
       '&::before': {
         content: '""',
         position: 'fixed',

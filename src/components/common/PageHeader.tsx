@@ -5,8 +5,8 @@ import { styled } from '@mui/material/styles';
 const PageTitle = styled(Typography)({
   fontFamily: '"Jura", sans-serif',
   fontWeight: 700,
-  fontSize: '32px',
-  lineHeight: '40px',
+  fontSize: '28px', // Reduced from 32px
+  lineHeight: '1.2',
   color: '#505050',
   margin: 0,
   padding: 0,
@@ -15,17 +15,18 @@ const PageTitle = styled(Typography)({
 const PageSubtitle = styled(Typography)({
   fontFamily: '"Jura", sans-serif',
   fontWeight: 700,
-  fontSize: '22px',
-  lineHeight: '28px',
+  fontSize: '17.3px', // 28px / 1.618 (golden ratio) = ~17.3px
+  lineHeight: '1.4',
   color: '#505050',
   margin: 0,
   padding: 0,
-  marginTop: '12px',
+  marginTop: '6px', // Reduced from 12px
+  opacity: 0.8,
 });
 
 interface PageHeaderProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle }) => {
@@ -33,11 +34,17 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle }) => {
     <Box sx={{ 
       display: 'flex', 
       flexDirection: 'column', 
-      alignItems: 'flex-start',
+      width: '100%',
       marginBottom: '24px',
     }}>
-      <PageTitle variant="h1">{title}</PageTitle>
-      {subtitle && <PageSubtitle variant="h2">{subtitle}</PageSubtitle>}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        width: '100%',
+      }}>
+        <PageTitle variant="h1">{title}</PageTitle>
+        {subtitle && <Box sx={{ width: '100%' }}>{subtitle}</Box>}
+      </Box>
     </Box>
   );
 };

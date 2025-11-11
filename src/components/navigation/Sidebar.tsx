@@ -81,11 +81,12 @@ const Sidebar: React.FC = () => {
           <ListItemButton
             onClick={() => navigate(helpItem.path)}
             sx={{
-              minHeight: 32,
+              minHeight: 36,
+              height: 36,
               justifyContent: isCollapsed ? 'center' : 'flex-start',
-              px: 2,
-              py: 0.5,
-              borderRadius: '6px',
+              px: 1.5,
+              py: 0.75,
+              borderRadius: '4px',
               '&:hover': {
                 backgroundColor: 'rgba(0, 0, 0, 0.04)',
               },
@@ -94,11 +95,11 @@ const Sidebar: React.FC = () => {
             <ListItemIcon
               sx={{
                 minWidth: 0,
-                mr: isCollapsed ? 'auto' : '8px',
+                mr: isCollapsed ? 'auto' : 1.5,
                 justifyContent: 'center',
                 color: 'text.secondary',
                 '& svg': {
-                  fontSize: '18px',
+                  fontSize: '16px',
                   opacity: 0.8,
                 }
               }}
@@ -109,7 +110,7 @@ const Sidebar: React.FC = () => {
               primary={helpItem.text} 
               primaryTypographyProps={{
                 fontWeight: 400,
-                fontSize: '12px',
+                fontSize: '0.8rem',
                 display: isCollapsed ? 'none' : 'block',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
