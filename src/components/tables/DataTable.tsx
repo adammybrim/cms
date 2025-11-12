@@ -39,6 +39,7 @@ interface DataTableProps<T> {
   defaultRowsPerPage?: number;
   showCheckboxes?: boolean;
   stickyHeader?: boolean;
+  getRowId?: (row: T) => string | number;
 }
 
 // Styled components
@@ -156,6 +157,7 @@ function DataTable<T>({
   defaultRowsPerPage = 10,
   showCheckboxes = true,
   stickyHeader = false,
+  getRowId,
 }: DataTableProps<T>) {
   const [order, setOrder] = useState<Order>('asc');
   const [orderBy, setOrderBy] = useState<keyof T>();
@@ -189,27 +191,31 @@ function DataTable<T>({
   };
 
   // Handle click on row
-  const handleClick = (event: React.MouseEvent, row: T) => {
-    if (showCheckboxes && (event.target as HTMLElement).tagName !== 'INPUT') {
-      const selectedIndex = selected.findIndex((item) => item === row);
-      let newSelected: T[] = [];
-
-      if (selectedIndex === -1) {
-        newSelected = [...selected, row];
-      } else if (selectedIndex === 0) {
-        newSelected = selected.slice(1);
-      } else if (selectedIndex === selected.length - 1) {
-        newSelected = selected.slice(0, -1);
-      } else if (selectedIndex > 0) {
-        newSelected = [
-          ...selected.slice(0, selectedIndex),
-          ...selected.slice(selectedIndex + 1),
-        ];
-      }
-
-      setSelected(newSelected);
-      onSelectionChange?.(newSelected);
+  const handleClick = (event: React.MouseEvent<unknown>, row: T) => {
+    if (!showCheckboxes) {
+      onRowClick?.(row);
+      return;
     }
+
+    const rowId = getRowId?.(row) ?? (row as any).id;
+    const selectedIndex = selected.findIndex((item) => getRowId?.(item) === rowId);
+    let newSelected: T[] = [];
+
+    if (selectedIndex === -1) {
+      newSelected = [...selected, row];
+    } else if (selectedIndex === 0) {
+      newSelected = newSelected.concat(selected.slice(1));
+    } else if (selectedIndex === selected.length - 1) {
+      newSelected = newSelected.concat(selected.slice(0, -1));
+    } else if (selectedIndex > 0) {
+      newSelected = newSelected.concat(
+        selected.slice(0, selectedIndex),
+        selected.slice(selectedIndex + 1)
+      );
+    }
+
+    setSelected(newSelected);
+    onSelectionChange?.(newSelected);
   };
 
   // Handle change page
@@ -291,8 +297,10 @@ function DataTable<T>({
   );
 
   // Check if row is selected
-  const isSelected = (row: T) => 
-    selected.some((selectedRow) => selectedRow === row);
+  const isSelected = (row: T) => {
+    const rowId = getRowId?.(row) ?? (row as any).id;
+    return selected.some((item) => getRowId?.(item) === rowId);
+  };
 
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows = 

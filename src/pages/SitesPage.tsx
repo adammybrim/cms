@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Box, 
   Typography, 
@@ -11,7 +11,8 @@ import {
   MenuItem, 
   ListItemIcon, 
   ListItemText, 
-  Divider 
+  Divider,
+  CircularProgress
 } from '@mui/material';
 import { 
   MoreVert as MoreVertIcon, 
@@ -24,36 +25,9 @@ import {
 import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
 import PageTemplate from './PageTemplate';
 import DataTable, { Column } from '../components/tables/DataTable';
-
-// Types
-type Site = {
-  id: string;
-  name: string;
-  location: string;
-  chargers: number;
-  active: boolean;
-  status: 'Online' | 'Offline' | 'Maintenance';
-  lastUpdated: string;
-};
-
-// Sample data
-const createData = (
-  id: string,
-  name: string,
-  location: string,
-  chargers: number,
-  active: boolean,
-  status: 'Online' | 'Offline' | 'Maintenance',
-  lastUpdated: string
-): Site => ({
-  id,
-  name,
-  location,
-  chargers,
-  active,
-  status,
-  lastUpdated,
-});
+import { Site, SiteTableRow, SiteStatus } from '../types/site.types';
+import { transformSiteToTableRow } from '../utils/siteUtils';
+import { useSites } from '../hooks/useSites';
 
 // Settings menu component
 const SettingsMenu: React.FC<{ siteId: string }> = ({ siteId }) => {
@@ -127,34 +101,34 @@ const SettingsMenu: React.FC<{ siteId: string }> = ({ siteId }) => {
   );
 };
 
-const rows: Site[] = [
-  createData('1', 'Downtown Charging', '123 Main St, City', 4, true, 'Online', '2023-11-10 14:30'),
-  createData('2', 'Mall Parking', '456 Mall Rd, City', 8, true, 'Online', '2023-11-10 15:15'),
-  createData('3', 'Airport Terminal A', '789 Airport Rd', 6, true, 'Maintenance', '2023-11-09 10:45'),
-  createData('4', 'University Campus', '101 College Ave', 10, true, 'Online', '2023-11-10 16:20'),
-  createData('5', 'Suburban Station', '202 Train St', 5, false, 'Offline', '2023-11-08 09:10'),
-];
-
 const SitesPage: React.FC = () => {
-  const [selected, setSelected] = useState<Site[]>([]);
+  const [selected, setSelected] = useState<SiteTableRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const { sites, isLoading, error } = useSites();
 
   // Filter rows based on search term
-  const filteredRows = rows.filter(
-    (row) =>
-      row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      row.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRows = sites.filter((row: SiteTableRow) =>
+    row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    row.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   // Define columns
-  const columns: Column<Site>[] = [
+  const columns: Column<SiteTableRow>[] = [
     {
       id: 'name',
       label: 'Name',
       minWidth: 250,
       sortable: true,
       headerAlign: 'left',
-      format: (value: string, row: Site) => (
+      format: (value: string, row: SiteTableRow) => (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box sx={{
             width: 40,
@@ -165,12 +139,11 @@ const SitesPage: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            flexShrink: 0,
           }}>
-            <HomeIcon fontSize="small" sx={{ color: 'white' }} />
+            <HomeIcon />
           </Box>
           <Box>
-            <Typography variant="body2" fontWeight={500} color="text.primary">
+            <Typography variant="body1" fontWeight={500} color="text.primary">
               {value}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -180,39 +153,20 @@ const SitesPage: React.FC = () => {
                   fontSize: '0.5rem',
                   color: (theme) => {
                     switch(row.status) {
-                      case 'Online':
+                      case SiteStatus.ONLINE:
                         return theme.palette.success.main;
-                      case 'Offline':
+                      case SiteStatus.OFFLINE:
                         return theme.palette.error.main;
-                      case 'Maintenance':
+                      case SiteStatus.MAINTENANCE:
                         return theme.palette.warning.main;
                       default:
                         return 'text.secondary';
                     }
-                  },
-                  marginRight: '4px'
-                }} 
-              />
-              <Typography 
-                variant="caption" 
-                sx={{
-                  color: (theme) => {
-                    switch(row.status) {
-                      case 'Online':
-                        return theme.palette.success.main;
-                      case 'Offline':
-                        return theme.palette.error.main;
-                      case 'Maintenance':
-                        return theme.palette.warning.main;
-                      default:
-                        return 'text.secondary';
-                    }
-                  },
-                  fontWeight: 500,
-                  textTransform: 'capitalize'
+                  }
                 }}
-              >
-                {row.status}
+              />
+              <Typography variant="caption" color="text.secondary">
+                {row.status.charAt(0) + row.status.slice(1).toLowerCase()}
               </Typography>
             </Box>
           </Box>
@@ -224,14 +178,11 @@ const SitesPage: React.FC = () => {
       label: 'Location',
       minWidth: 200,
       sortable: true,
-      align: 'center',
-      headerAlign: 'center',
+      align: 'left',
+      headerAlign: 'left',
       format: (value: string) => (
-        <Box sx={{ textAlign: 'center', lineHeight: 1.2 }}>
-          <div>{value}</div>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.2 }}>
-            {value.split(',')[0].match(/\d+/)?.[0] || 'AB12' } 3CD
-          </Typography>
+        <Box sx={{ lineHeight: 1.4 }}>
+          {value}
         </Box>
       ),
     },
@@ -244,38 +195,6 @@ const SitesPage: React.FC = () => {
       sortable: true,
     },
     {
-      id: 'status',
-      label: 'Status',
-      minWidth: 120,
-      align: 'center',
-      headerAlign: 'center',
-      sortable: true,
-      format: (value: string) => {
-        const colorMap = {
-          Online: 'success',
-          Offline: 'error',
-          Maintenance: 'warning',
-        } as const;
-        
-        return (
-          <Chip 
-            label={value} 
-            color={colorMap[value as keyof typeof colorMap] || 'default'}
-            size="small"
-            sx={{
-              height: '24px',
-              borderRadius: '4px',
-              fontWeight: 500,
-              fontSize: '0.75rem',
-              '& .MuiChip-label': {
-                px: 1,
-              },
-            }}
-          />
-        );
-      },
-    },
-    {
       id: 'lastUpdated',
       label: 'Last Updated',
       minWidth: 150,
@@ -284,25 +203,33 @@ const SitesPage: React.FC = () => {
       sortable: true,
     },
     {
-      id: 'id',  // Using 'id' as a fallback since it exists in Site type
+      id: 'id',
       label: '',
       minWidth: 48,
       width: 48,
       align: 'center',
       headerAlign: 'center',
       sortable: false,
-      format: (_, row) => <SettingsMenu siteId={row.id} />,
-    } as Column<Site>,
+      format: (_, row) => <SettingsMenu key={row.id} siteId={row.id} />,
+    } as Column<SiteTableRow>,
   ];
 
-  const handleRowClick = (row: Site) => {
+  const handleRowClick = (row: SiteTableRow) => {
     console.log('Row clicked:', row);
     // Navigate to site detail page or open edit modal
   };
 
-  const handleSelectionChange = (selected: Site[]) => {
+  const handleSelectionChange = (selected: SiteTableRow[]) => {
     setSelected(selected);
   };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <PageTemplate title="Sites">
@@ -328,7 +255,7 @@ const SitesPage: React.FC = () => {
         </Button>
       </Box>
 
-      <DataTable
+      <DataTable<SiteTableRow>
         columns={columns}
         rows={filteredRows}
         onRowClick={handleRowClick}
@@ -336,7 +263,7 @@ const SitesPage: React.FC = () => {
         rowsPerPageOptions={[5, 10, 25]}
         defaultRowsPerPage={5}
         showCheckboxes={true}
-        stickyHeader={true}
+        getRowId={(row) => row.id}
       />
 
       {selected.length > 0 && (
