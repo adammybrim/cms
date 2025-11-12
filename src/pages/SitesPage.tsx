@@ -12,7 +12,9 @@ import {
   ListItemIcon, 
   ListItemText, 
   Divider,
-  CircularProgress
+  CircularProgress,
+  MenuList,
+  ListItem
 } from '@mui/material';
 import { 
   MoreVert as MoreVertIcon, 
@@ -22,9 +24,17 @@ import {
   Home as HomeIcon,
   FiberManualRecord as StatusDotIcon
 } from '@mui/icons-material';
-import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
+import { 
+  Add as AddIcon, 
+  Search as SearchIcon,
+  FilterList as FilterListIcon,
+  Check as CheckIcon,
+  LocationOn as LocationIcon,
+  Tune as TuneIcon,
+  Public as RegionIcon
+} from '@mui/icons-material';
 import PageTemplate from './PageTemplate';
-import DataTable, { Column } from '../components/tables/DataTable';
+import DataTableFromFigma from '../components/tables/DataTableFromFigma';
 import { Site, SiteTableRow, SiteStatus } from '../types/site.types';
 import { transformSiteToTableRow } from '../utils/siteUtils';
 import { useSites } from '../hooks/useSites';
@@ -101,16 +111,106 @@ const SettingsMenu: React.FC<{ siteId: string }> = ({ siteId }) => {
   );
 };
 
-const SitesPage: React.FC = () => {
-  const [selected, setSelected] = useState<SiteTableRow[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const { sites, isLoading, error } = useSites();
+// UK Regions for filtering
+const UK_REGIONS = [
+  'All Regions',
+  'London',
+  'South East',
+  'South West',
+  'East of England',
+  'Midlands',
+  'North West',
+  'North East',
+  'Yorkshire and the Humber',
+  'Wales',
+  'Scotland',
+  'Northern Ireland'
+];
 
-  // Filter rows based on search term
-  const filteredRows = sites.filter((row: SiteTableRow) =>
-    row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    row.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+const SitesPage: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null);
+  const [locationFilter, setLocationFilter] = useState('');
+  const [loadBalancingFilter, setLoadBalancingFilter] = useState<boolean | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState('All Regions');
+  const { sites, isLoading, error } = useSites();
+  const filterOpen = Boolean(filterAnchorEl);
+
+  const handleFilterClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setFilterAnchorEl(event.currentTarget);
+  };
+
+  const handleFilterClose = () => {
+    setFilterAnchorEl(null);
+  };
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocationFilter(e.target.value);
+  };
+
+  const toggleLoadBalancing = () => {
+    setLoadBalancingFilter(prev => prev === null ? true : prev ? false : null);
+  };
+
+  const handleRegionSelect = (region: string) => {
+    setSelectedRegion(region);
+  };
+
+  const clearFilters = () => {
+    setLocationFilter('');
+    setLoadBalancingFilter(null);
+    setSelectedRegion('All Regions');
+  };
+
+  // Transform site data to match the DataTableFromFigma format
+  const chargerSites = sites.map(site => {
+    // Simple way to assign a site type based on site name for demo purposes
+    // In a real app, this would come from your data
+    const siteTypes: ('house' | 'apartment' | 'parking')[] = ['house', 'apartment', 'parking'];
+    const randomType = siteTypes[Math.floor(Math.random() * siteTypes.length)];
+    
+    // Generate a random number of chargers between 10 and 200
+    const chargerCount = Math.floor(Math.random() * 191) + 10; // 10-200 chargers
+    // Calculate active chargers (80-95% of total)
+    const activePercentage = 0.8 + (Math.random() * 0.15); // 80-95%
+    const activeChargers = Math.round(chargerCount * activePercentage);
+    // Ensure we don't have more active chargers than total chargers
+    const inactiveChargers = chargerCount - activeChargers;
+    
+    return {
+      id: site.id,
+      name: site.name,
+      status: site.status.toLowerCase() as 'online' | 'offline' | 'maintenance',
+      siteType: randomType,
+      location: site.location,
+      chargerCount,
+      activeChargers,
+      inactiveChargers,
+      loadBalancing: Math.random() > 0.5 // Random true/false for demo
+    };
+  });
+
+  // Filter sites based on search and filters
+  const filteredSites = chargerSites.filter(site => {
+    // Search term filter
+    const matchesSearch = searchTerm === '' || 
+      site.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      site.location.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Location filter
+    const matchesLocation = locationFilter === '' || 
+      site.location.toLowerCase().includes(locationFilter.toLowerCase());
+
+    // Load balancing filter
+    const matchesLoadBalancing = loadBalancingFilter === null || 
+      site.loadBalancing === loadBalancingFilter;
+
+    // Region filter
+    const matchesRegion = selectedRegion === 'All Regions' || 
+      site.location.includes(selectedRegion);
+
+    return matchesSearch && matchesLocation && matchesLoadBalancing && matchesRegion;
+  });
 
   if (isLoading) {
     return (
@@ -120,107 +220,19 @@ const SitesPage: React.FC = () => {
     );
   }
 
-  // Define columns
-  const columns: Column<SiteTableRow>[] = [
-    {
-      id: 'name',
-      label: 'Name',
-      minWidth: 250,
-      sortable: true,
-      headerAlign: 'left',
-      format: (value: string, row: SiteTableRow) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box sx={{
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            backgroundColor: 'success.main',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-          }}>
-            <HomeIcon />
-          </Box>
-          <Box>
-            <Typography variant="body1" fontWeight={500} color="text.primary">
-              {value}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <StatusDotIcon 
-                fontSize="small" 
-                sx={{
-                  fontSize: '0.5rem',
-                  color: (theme) => {
-                    switch(row.status) {
-                      case SiteStatus.ONLINE:
-                        return theme.palette.success.main;
-                      case SiteStatus.OFFLINE:
-                        return theme.palette.error.main;
-                      case SiteStatus.MAINTENANCE:
-                        return theme.palette.warning.main;
-                      default:
-                        return 'text.secondary';
-                    }
-                  }
-                }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                {row.status.charAt(0) + row.status.slice(1).toLowerCase()}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-      ),
-    },
-    {
-      id: 'location',
-      label: 'Location',
-      minWidth: 200,
-      sortable: true,
-      align: 'left',
-      headerAlign: 'left',
-      format: (value: string) => (
-        <Box sx={{ lineHeight: 1.4 }}>
-          {value}
-        </Box>
-      ),
-    },
-    {
-      id: 'chargers',
-      label: 'Chargers',
-      minWidth: 100,
-      align: 'center',
-      headerAlign: 'center',
-      sortable: true,
-    },
-    {
-      id: 'lastUpdated',
-      label: 'Last Updated',
-      minWidth: 150,
-      align: 'right',
-      headerAlign: 'center',
-      sortable: true,
-    },
-    {
-      id: 'id',
-      label: '',
-      minWidth: 48,
-      width: 48,
-      align: 'center',
-      headerAlign: 'center',
-      sortable: false,
-      format: (_, row) => <SettingsMenu key={row.id} siteId={row.id} />,
-    } as Column<SiteTableRow>,
-  ];
-
-  const handleRowClick = (row: SiteTableRow) => {
+  const handleRowClick = (row: any) => {
     console.log('Row clicked:', row);
     // Navigate to site detail page or open edit modal
   };
 
-  const handleSelectionChange = (selected: SiteTableRow[]) => {
-    setSelected(selected);
+  const handleSettingsClick = (row: any) => {
+    console.log('Settings clicked for:', row);
+    // Open settings modal or perform action
+  };
+
+  const handleMoreClick = (row: any) => {
+    console.log('More options clicked for:', row);
+    // Show more options menu
   };
 
   if (isLoading) {
@@ -234,60 +246,186 @@ const SitesPage: React.FC = () => {
   return (
     <PageTemplate title="Sites">
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <TextField
-          size="small"
-          placeholder="Search sites..."
-          variant="outlined"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, maxWidth: '800px' }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={handleFilterClick}
+            startIcon={<FilterListIcon />}
+            sx={{
+              textTransform: 'none',
+              borderColor: 'divider',
+              color: 'text.secondary',
+              whiteSpace: 'nowrap',
+              backgroundColor: 'background.paper',
+              '&:hover': {
+                borderColor: 'text.secondary',
+                backgroundColor: 'background.paper',
+              },
+              ...((locationFilter || loadBalancingFilter !== null || selectedRegion !== 'All Regions') && {
+                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                borderColor: 'primary.main',
+                color: 'primary.main',
+              })
+            }}
+          >
+            {locationFilter || loadBalancingFilter !== null || selectedRegion !== 'All Regions' 
+              ? 'Filters Active' 
+              : 'Filter'}
+          </Button>
+          <TextField
+            size="small"
+            placeholder="Search sites..."
+            variant="outlined"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
+            }}
+            sx={{ 
+              flex: 1,
+              minWidth: '300px',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                backgroundColor: 'background.paper',
+              },
+            }}
+          />
+        </Box>
+        <Menu
+          anchorEl={filterAnchorEl}
+          open={filterOpen}
+          onClose={handleFilterClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'left',
           }}
-          sx={{ width: 300 }}
-        />
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'left',
+          }}
+          PaperProps={{
+            sx: {
+              width: 300,
+              p: 2,
+            },
+          }}
+        >
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" fontWeight={600}>Filters</Typography>
+            <Button 
+              size="small" 
+              onClick={clearFilters}
+              disabled={!locationFilter && loadBalancingFilter === null && selectedRegion === 'All Regions'}
+            >
+              Clear all
+            </Button>
+          </Box>
+          
+          {/* Location Filter */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocationIcon fontSize="small" />
+              Location
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search by location..."
+              value={locationFilter}
+              onChange={handleLocationChange}
+              sx={{ 
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'background.paper',
+                },
+              }}
+            />
+          </Box>
+
+          {/* Load Balancing Filter */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TuneIcon fontSize="small" />
+              Load Balancing
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant={loadBalancingFilter === true ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setLoadBalancingFilter(true)}
+                startIcon={loadBalancingFilter === true ? <CheckIcon /> : null}
+                sx={{
+                  flex: 1,
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                }}
+              >
+                Enabled
+              </Button>
+              <Button
+                variant={loadBalancingFilter === false ? 'contained' : 'outlined'}
+                size="small"
+                onClick={() => setLoadBalancingFilter(false)}
+                startIcon={loadBalancingFilter === false ? <CheckIcon /> : null}
+                sx={{
+                  flex: 1,
+                  justifyContent: 'flex-start',
+                  textTransform: 'none',
+                }}
+              >
+                Disabled
+              </Button>
+            </Box>
+          </Box>
+
+          {/* UK Region Filter */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <RegionIcon fontSize="small" />
+              UK Region
+            </Typography>
+            <Box sx={{ maxHeight: 200, overflowY: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+              {UK_REGIONS.map((region) => (
+                <MenuItem
+                  key={region}
+                  selected={selectedRegion === region}
+                  onClick={() => handleRegionSelect(region)}
+                  sx={{
+                    py: 1,
+                    '&.Mui-selected': {
+                      backgroundColor: 'action.selected',
+                      '&:hover': {
+                        backgroundColor: 'action.selected',
+                      },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 32 }}>
+                    {selectedRegion === region && <CheckIcon fontSize="small" />}
+                  </ListItemIcon>
+                  <ListItemText primary={region} />
+                </MenuItem>
+              ))}
+            </Box>
+          </Box>
+        </Menu>
         <Button
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
           onClick={() => console.log('Add new site')}
+          sx={{ boxShadow: 'none !important' }}
         >
           Add Site
         </Button>
       </Box>
 
-      <DataTable<SiteTableRow>
-        columns={columns}
-        rows={filteredRows}
+      <DataTableFromFigma
+        data={filteredSites}
         onRowClick={handleRowClick}
-        onSelectionChange={handleSelectionChange}
-        rowsPerPageOptions={[5, 10, 25]}
-        defaultRowsPerPage={5}
-        showCheckboxes={true}
-        getRowId={(row) => row.id}
+        onSettingsClick={handleSettingsClick}
+        onMoreClick={handleMoreClick}
       />
-
-      {selected.length > 0 && (
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => console.log('Deactivate selected')}
-              disabled={selected.length === 0}
-            >
-              Deactivate ({selected.length})
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => console.log('Edit selected')}
-              disabled={selected.length !== 1}
-            >
-              Edit Site
-            </Button>
-          </Stack>
-        </Box>
-      )}
     </PageTemplate>
   );
 };
